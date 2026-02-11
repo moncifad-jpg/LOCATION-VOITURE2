@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إدارة الأسطول الاحترافي</title>
+    <style>
+        :root { --safe: #2ecc71; --busy: #3498db; --warning: #f39c12; --late: #e74c3c; --maint: #95a5a6; --empty: #ecf0f1; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn-add-fleet { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        .fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .car-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 10px solid var(--empty); position: relative; transition: 0.3s; }
+        
+        /* الألوان حسب الحالة */
+        .status-dispo { border-top-color: var(--safe); }
+        .status-rented { border-top-color: var(--busy); }
+        .status-warning { border-top-color: var(--warning); animation: flash 1.5s infinite; }
+        .status-overdue { border-top-color: var(--late); animation: pulse 1s infinite; }
+        .status-maint { border-top-color: var(--maint); opacity: 0.8; } /* حالة الصيانة */
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+        @keyframes flash { 0% { border-top-color: var(--warning); } 50% { border-top-color: #fff; } 100% { border-top-color: var(--warning); } }
+
+        .settings-btn { position: absolute; left: 10px; top: 10px; background: none; border: none; font-size: 1.2em; cursor: pointer; color: #999; }
+        .settings-btn:hover { color: #333; }
+
+        .info-row { font-size: 0.9em; margin: 8px 0; color: #444; }
+        .btn-whatsapp { background: #25D366; color: white; width: 100%; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; text-decoration: none; display: block; text-align: center; }
+        
+        .actions { display: flex; gap: 5px; margin-top: 15px; }
+        button { border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-rent { background: var(--busy); color: white; flex: 1; }
+        .btn-return { background: var(--safe); color: white; flex: 1; }
+
+        /* Modal Styles */
+        #modal, #carModal, #editModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.4); z-index: 100; min-width: 320px; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="header-actions">
+    <h1>🚗 أسطول سياراتي</h1>
+    <button class="btn-add-fleet" onclick="openCarModal()">+ إضافة سيارة</button>
+</div>
+
+<div class="fleet-grid" id="fleetGrid"></div>
+
+<div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+
+<div id="modal">
+    <h3>تسجيل كراء جديد</h3>
+    <input type="hidden" id="modalIndex">
+    <input type="text" id="cName" placeholder="إسم المكتري">
+    <input type="tel" id="cPhone" placeholder="رقم الواتساب (212...)">
+    <input type="datetime-local" id="eTime">
+    <button class="btn-rent" onclick="confirmRent()" style="width:100%">تأكيد</button>
+</div>
+
+<div id="editModal">
+    <h3>تعديل السيارة</h3>
+    <input type="hidden" id="editIndex">
+    <label>إسم السيارة:</label>
+    <input type="text" id="editName">
+    <label>الماتريكول:</label>
+    <input type="text" id="editPlate">
+    <label>تغيير الحالة:</label>
+    <select id="editStatus">
+        <option value="dispo">متوفرة (Dispo)</option>
+        <option value="rented">كارية (Rented)</option>
+        <option value="maint">خارج الخدمة (ميكانيك/لافاج)</option>
+    </select>
+    <hr>
+    <button onclick="saveChanges()" style="background:var(--busy); color:white; width:100%; margin-bottom:10px;">حفظ التعديلات</button>
+    <button onclick="deleteCar()" style="background:var(--late); color:white; width:100%;">حذف السيارة نهائياً</button>
+</div>
+
+<div id="carModal">
+    <h3>إضافة سيارة للأسطول</h3>
+    <input type="text" id="newCarName" placeholder="نوع السيارة">
+    <input type="text" id="newCarPlate" placeholder="الماتريكول">
+    <button class="btn-add-fleet" onclick="addNewCar()" style="width:100%">حفظ</button>
+</div>
+
+<script>
+    let myFleet = JSON.parse(localStorage.getItem('myFleet')) || [];
+
+    function renderFleet() {
+        const grid = document.getElementById('fleetGrid');
+        grid.innerHTML = '';
+        const now = new Date();
+
+        myFleet.forEach((car, index) => {
+            let statusClass = 'status-dispo';
+            let statusText = 'واجدة';
+            let showWhatsApp = false;
+
+            if (car.status === 'maint') {
+                statusClass = 'status-maint';
+                statusText = 'في الصيانة / لافاج';
+            } else if (car.status === 'rented') {
+                const endDate = new Date(car.end);
+                const diffHours = (endDate - now) / (1000 * 60 * 60);
+
+                if (diffHours < 0) {
+                    statusClass = 'status-overdue'; statusText = 'تعطلات!'; showWhatsApp = true;
+                } else if (diffHours <= 1) {
+                    statusClass = 'status-warning'; statusText = 'باقي قل من ساعة'; showWhatsApp = true;
+                } else {
+                    statusClass = 'status-rented'; statusText = 'كارية';
+                }
+            }
+
+            const waUrl = `https://wa.me/${car.phone}?text=${encodeURIComponent('تذكير بخصوص السيارة ' + car.name)}`;
+
+            grid.innerHTML += `
+                <div class="car-card ${statusClass}">
+                    <button class="settings-btn" onclick="openEditModal(${index})">⚙️</button>
+                    <div style="font-weight:bold; font-size:1.2em;">${car.name}</div>
+                    <div class="info-row">🆔 ${car.plate}</div>
+                    ${car.status === 'rented' ? `
+                        <div class="info-row">👤 ${car.client}</div>
+                        <div class="info-row">⏰ ${car.end.replace('T', ' ')}</div>
+                    ` : ''}
+                    <div style="margin-top:10px;"><span style="padding:3px 8px; border-radius:10px; background:#eee; font-size:0.8em;">${statusText}</span></div>
+                    
+                    ${showWhatsApp && car.phone ? `<a href="${waUrl}" target="_blank" class="btn-whatsapp">📱 تذكير واتساب</a>` : ''}
+
+                    <div class="actions">
+                        ${car.status === 'dispo' 
+                            ? `<button class="btn-rent" onclick="openRentModal(${index})">تكرات</button>` 
+                            : car.status === 'rented' ? `<button class="btn-return" onclick="returnCar(${index})">رجعات</button>` 
+                            : `<button class="btn-return" onclick="setStatus(${index}, 'dispo')">ردها للخدمة</button>`
+                        }
+                    </div>
+                </div>
+            `;
+        });
+        localStorage.setItem('myFleet', JSON.stringify(myFleet));
+    }
+
+    // دوال المودال
+    function openCarModal() { document.getElementById('carModal').style.display='block'; document.getElementById('overlay').style.display='block'; }
+    function openRentModal(i) { document.getElementById('modalIndex').value=i; document.getElementById('modal').style.display='block'; document.getElementById('overlay').style.display='block'; }
+    
+    function openEditModal(i) {
+        const car = myFleet[i];
+        document.getElementById('editIndex').value = i;
+        document.getElementById('editName').value = car.name;
+        document.getElementById('editPlate').value = car.plate;
+        document.getElementById('editStatus').value = car.status;
+        document.getElementById('editModal').style.display='block';
+        document.getElementById('overlay').style.display='block';
+    }
+
+    function saveChanges() {
+        const i = document.getElementById('editIndex').value;
+        myFleet[i].name = document.getElementById('editName').value;
+        myFleet[i].plate = document.getElementById('editPlate').value;
+        myFleet[i].status = document.getElementById('editStatus').value;
+        closeAllModals(); renderFleet();
+    }
+
+    function deleteCar() {
+        if(confirm('واش متأكد بغيتي تمسح هاد السيارة نهائياً؟')) {
+            const i = document.getElementById('editIndex').value;
+            myFleet.splice(i, 1);
+            closeAllModals(); renderFleet();
+        }
+    }
+
+    function setStatus(i, status) { myFleet[i].status = status; renderFleet(); }
+    function addNewCar() { const n = document.getElementById('newCarName').value; const p = document.getElementById('newCarPlate').value; if(n && p){ myFleet.push({name:n, plate:p, status:'dispo'}); closeAllModals(); renderFleet(); }}
+    function confirmRent() { const i = document.getElementById('modalIndex').value; myFleet[i].client = document.getElementById('cName').value; myFleet[i].phone = document.getElementById('cPhone').value; myFleet[i].end = document.getElementById('eTime').value; myFleet[i].status = 'rented'; closeAllModals(); renderFleet(); }
+    function returnCar(i) { if(confirm('رجعات؟')){ myFleet[i].status = 'dispo'; myFleet[i].client=''; myFleet[i].phone=''; myFleet[i].end=''; renderFleet(); } }
+    function closeAllModals() { document.querySelectorAll('#modal, #carModal, #editModal, #overlay').forEach(el => el.style.display='none'); }
+
+    setInterval(renderFleet, 60000);
+    renderFleet();
+</script>
+</body>
+</html>
