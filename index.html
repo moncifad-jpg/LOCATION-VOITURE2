@@ -1,324 +1,204 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" id="mainHtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مدير الأسطول الاحترافي</title>
     <style>
         :root {
-            --primary: #1a73e8;
-            --safe: #2ecc71;
-            --busy: #3498db;
-            --warning: #f39c12;
-            --late: #e74c3c;
-            --maint: #95a5a6;
-            --bg: #f8f9fa;
+            --primary: #1a73e8; --safe: #2ecc71; --busy: #3498db;
+            --warning: #f39c12; --late: #e74c3c; --maint: #95a5a6; --bg: #f8f9fa;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 15px;
-            color: #333;
+            background-color: var(--bg); margin: 0; padding: 15px; color: #333;
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; padding: 15px; border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
         }
 
-        .header h1 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+        .header h1 { font-size: 1.1rem; margin: 0; color: var(--primary); }
 
-        .btn-add {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
+        .lang-btn {
+            background: none; border: 1px solid #ddd; padding: 5px 10px;
+            border-radius: 8px; cursor: pointer; font-size: 0.9rem;
         }
 
-        /* ترتيب المربعات: وحدة تحت وحدة في التيليفون */
-        .fleet-grid {
-            display: grid;
-            grid-template-columns: 1fr; /* ديفولت: وحدة في السطر */
-            gap: 20px;
-        }
-
-        /* في الشاشات الكبيرة (الكمبيوتر) يولي 2 أو 3 في السطر */
-        @media (min-width: 768px) {
-            .fleet-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-        }
+        .fleet-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .fleet-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); } }
 
         .car-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            border: 2px solid #eee;
-            position: relative;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
+            background: white; border-radius: 15px; padding: 20px;
+            border: 2px solid #eee; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
 
-        /* ألوان الحواف حسب الحالة */
         .status-dispo { border-color: var(--safe); }
         .status-rented { border-color: var(--busy); }
         .status-warning { border-color: var(--warning); border-width: 3px; }
         .status-overdue { border-color: var(--late); border-width: 3px; }
-        .status-maint { border-color: var(--maint); background: #fdfdfd; }
+        .status-maint { border-color: var(--maint); }
 
-        .settings-btn {
-            position: absolute;
-            left: 15px;
-            top: 15px;
-            background: none;
-            border: none;
-            font-size: 1.3rem;
-            cursor: pointer;
-        }
-
-        .car-title { font-size: 1.4rem; font-weight: bold; margin-bottom: 5px; }
-        .car-plate { color: #666; font-size: 0.9rem; margin-bottom: 15px; display: block; }
-
-        /* ستايل الكرونو (العد التنازلي) */
         .timer-container {
-            background: #fdf2f2;
-            padding: 12px;
-            border-radius: 10px;
-            margin: 15px 0;
-            text-align: center;
-            border: 1px dashed #e74c3c;
+            background: #fff5f5; padding: 10px; border-radius: 10px;
+            margin: 15px 0; text-align: center; border: 1px dashed var(--late);
         }
 
-        .timer-label { font-size: 0.8rem; color: #c0392b; display: block; margin-bottom: 5px; }
-        .timer-value { font-size: 1.3rem; font-weight: bold; color: #2c3e50; font-family: monospace; }
-
-        .info-row { font-size: 0.95rem; margin-bottom: 8px; }
+        .timer-value { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
 
         .btn-whatsapp {
-            background: #25D366;
-            color: white;
-            text-decoration: none;
-            display: block;
-            text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            margin-top: 10px;
+            background: #25D366; color: white; text-decoration: none;
+            display: block; text-align: center; padding: 12px;
+            border-radius: 8px; font-weight: bold; margin-top: 10px;
         }
 
-        .actions-bar {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
+        .actions-bar { display: flex; gap: 10px; margin-top: 15px; }
+        .actions-bar button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        .actions-bar button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* نافذة المودال */
         .modal {
-            display: none;
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            z-index: 1000;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white;
+            padding: 25px; border-radius: 15px; z-index: 1000;
+            width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.3);
         }
 
         .overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 999;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 999;
         }
 
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-        }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        
+        /* زر الإعدادات الفوق على اليسار */
+        .top-settings { display: flex; gap: 10px; align-items: center; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>لوحة تحكم الأسطول 🚗</h1>
-    <button class="btn-add" onclick="openModal('carModal')">+ إضافة لوطو</button>
+    <div class="top-settings">
+        <button class="lang-btn" onclick="openModal('langModal')">⚙️ <span id="txt-settings">الإعدادات</span></button>
+    </div>
+    <h1 id="txt-title">لوحة تحكم الأسطول 🚗</h1>
+    <button style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:8px; font-weight:bold;" onclick="openModal('carModal')" id="txt-add-btn">+ إضافة</button>
 </div>
 
 <div class="fleet-grid" id="fleetGrid"></div>
 
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
-<div id="rentModal" class="modal">
-    <h3>تسجيل كراء</h3>
-    <input type="hidden" id="rentIdx">
-    <input type="text" id="cName" placeholder="إسم المكتري">
-    <input type="tel" id="cPhone" placeholder="واتساب (مثال: 212600000000)">
-    <input type="datetime-local" id="eTime">
-    <button class="btn-add" onclick="confirmRent()" style="width:100%">تأكيد</button>
+
+<div id="langModal" class="modal">
+    <h3 id="txt-lang-title">اختيار اللغة / Language</h3>
+    <button onclick="setLanguage('ar')" style="width:100%; margin-bottom:10px; padding:10px;">العربية (Morocco)</button>
+    <button onclick="setLanguage('fr')" style="width:100%; margin-bottom:10px; padding:10px;">Français</button>
+    <button onclick="setLanguage('en')" style="width:100%; margin-bottom:10px; padding:10px;">English</button>
+    <button onclick="closeAll()" style="width:100%; background:#eee; border:none; padding:10px; border-radius:8px;">إلغاء</button>
 </div>
 
-<div id="editModal" class="modal">
-    <h3>⚙️ إعدادات السيارة</h3>
-    <input type="hidden" id="editIdx">
-    <input type="text" id="editName">
-    <input type="text" id="editPlate">
-    <select id="editStatus">
-        <option value="dispo">متوفرة</option>
-        <option value="rented">كارية</option>
-        <option value="maint">عند الميكانيك / لافاج</option>
-    </select>
-    <button class="btn-add" onclick="saveEdit()" style="width:100%; margin-bottom:10px;">حفظ</button>
-    <button onclick="deleteCar()" style="width:100%; background:var(--late); color:white; border:none; padding:12px; border-radius:8px;">حذف نهائي</button>
+<div id="rentModal" class="modal">
+    <h3 id="txt-rent-title">تسجيل كراء</h3>
+    <input type="hidden" id="rentIdx">
+    <input type="text" id="cName" placeholder="الإسم">
+    <input type="tel" id="cPhone" placeholder="واتساب (212...)">
+    <input type="datetime-local" id="eTime">
+    <button onclick="confirmRent()" style="width:100%; background:var(--primary); color:white; padding:12px; border:none; border-radius:8px;" id="txt-confirm">تأكيد</button>
 </div>
 
 <div id="carModal" class="modal">
-    <h3>إضافة سيارة جديدة</h3>
-    <input type="text" id="newName" placeholder="نوع السيارة">
+    <h3 id="txt-new-car">إضافة سيارة جديدة</h3>
+    <input type="text" id="newName" placeholder="النوع">
     <input type="text" id="newPlate" placeholder="الماتريكول">
-    <button class="btn-add" onclick="addNewCar()" style="width:100%">حفظ</button>
+    <button onclick="addNewCar()" style="width:100%; background:var(--primary); color:white; padding:12px; border:none; border-radius:8px;" id="txt-save">حفظ</button>
 </div>
 
 <script>
+    // قاموس اللغات
+    const translations = {
+        ar: { title: "لوحة تحكم الأسطول 🚗", settings: "الإعدادات", add: "+ إضافة", rent: "تسجيل كراء", confirm: "تأكيد", save: "حفظ", newCar: "سيارة جديدة", back: "رجعات", rentBtn: "تكرات", wa: "صيفط واتساب", remaining: "باقي للدخول:", overdue: "تأخير!", status_dispo: "متوفرة ✅", status_maint: "في الصيانة 🛠️" },
+        fr: { title: "Gestion de Flotte 🚗", settings: "Paramètres", add: "+ Ajouter", rent: "Louer Voiture", confirm: "Confirmer", save: "Enregistrer", newCar: "Nouvelle Voiture", back: "Retour", rentBtn: "Louer", wa: "Envoyer WhatsApp", remaining: "Temps restant:", overdue: "Retard!", status_dispo: "Disponible ✅", status_maint: "En Maintenance 🛠️" },
+        en: { title: "Fleet Dashboard 🚗", settings: "Settings", add: "+ Add", rent: "Rent Car", confirm: "Confirm", save: "Save", newCar: "New Car", back: "Returned", rentBtn: "Rent", wa: "Send WhatsApp", remaining: "Time left:", overdue: "Overdue!", status_dispo: "Available ✅", status_maint: "Maintenance 🛠️" }
+    };
+
+    let currentLang = localStorage.getItem('appLang') || 'ar';
     let myFleet = JSON.parse(localStorage.getItem('myFleet')) || [];
 
-    // دالة لحساب الوقت المتبقي (الكرونو)
+    function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('appLang', lang);
+        document.getElementById('mainHtml').dir = (lang === 'ar' ? 'rtl' : 'ltr');
+        document.getElementById('mainHtml').lang = lang;
+        updateUI();
+        closeAll();
+        render();
+    }
+
+    function updateUI() {
+        const t = translations[currentLang];
+        document.getElementById('txt-title').innerText = t.title;
+        document.getElementById('txt-settings').innerText = t.settings;
+        document.getElementById('txt-add-btn').innerText = t.add;
+        document.getElementById('txt-rent-title').innerText = t.rent;
+        document.getElementById('txt-confirm').innerText = t.confirm;
+        document.getElementById('txt-save').innerText = t.save;
+        document.getElementById('txt-new-car').innerText = t.newCar;
+    }
+
     function getCountdown(endTime) {
         const total = Date.parse(endTime) - Date.parse(new Date());
-        if (total <= 0) return "انتهى الوقت!";
-        
-        const days = Math.floor(total / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
-        const mins = Math.floor((total / 1000 / 60) % 60);
-        
-        return `${days} يوم و ${hours} ساعة و ${mins} دقيقة`;
+        if (total <= 0) return translations[currentLang].overdue;
+        const d = Math.floor(total / (1000 * 60 * 60 * 24));
+        const h = Math.floor((total / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((total / 1000 / 60) % 60);
+        return `${d}d ${h}h ${m}m`;
     }
 
     function render() {
         const grid = document.getElementById('fleetGrid');
         grid.innerHTML = '';
-        const now = new Date();
-
+        const t = translations[currentLang];
+        
         myFleet.forEach((car, i) => {
-            let sClass = 'status-dispo';
-            let sText = 'متوفرة ✅';
-            let chronoHtml = '';
-            let showWa = false;
+            let sClass = 'status-dispo', sText = t.status_dispo, chrono = '', showWa = false;
 
             if (car.status === 'maint') {
-                sClass = 'status-maint'; sText = 'في الصيانة 🛠️';
+                sClass = 'status-maint'; sText = t.status_maint;
             } else if (car.status === 'rented') {
-                const diff = (new Date(car.end) - now) / 3600000;
-                chronoHtml = `
-                    <div class="timer-container">
-                        <span class="timer-label">باقي للدخول:</span>
-                        <span class="timer-value">${getCountdown(car.end)}</span>
-                    </div>`;
-
-                if (diff < 0) { 
-                    sClass = 'status-overdue'; sText = 'تأخير! ⚠️'; showWa = true;
-                } else if (diff <= 1) { 
-                    sClass = 'status-warning'; sText = 'قربات تدخل ⏱️'; showWa = true;
-                } else { 
-                    sClass = 'status-rented'; sText = 'كارية 🟦';
-                }
+                const diff = (new Date(car.end) - new Date()) / 3600000;
+                chrono = `<div class="timer-container"><small>${t.remaining}</small><br><span class="timer-value">${getCountdown(car.end)}</span></div>`;
+                if (diff < 0) { sClass = 'status-overdue'; sText = t.overdue; showWa = true; }
+                else if (diff <= 1) { sClass = 'status-warning'; showWa = true; }
+                else sClass = 'status-rented';
             }
-
-            const waMsg = `تذكير بخصوص السيارة ${car.name} (${car.plate}) خاصها تدخل فـ ${car.end?.replace('T',' ')}`;
-            const waUrl = `https://wa.me/${car.phone}?text=${encodeURIComponent(waMsg)}`;
 
             grid.innerHTML += `
                 <div class="car-card ${sClass}">
-                    <button class="settings-btn" onclick="openEdit(${i})">⚙️</button>
-                    <span class="car-title">${car.name}</span>
-                    <span class="car-plate">${car.plate}</span>
-                    
-                    ${car.status === 'rented' ? `
-                        <div class="info-row">👤 <b>المكتري:</b> ${car.client}</div>
-                        ${chronoHtml}
-                    ` : `<div style="padding:20px; text-align:center; color:#999;">اللوطو واجدة للكراء</div>`}
-
-                    <div style="font-size:0.8rem; margin-top:10px;"><b>الحالة:</b> ${sText}</div>
-
-                    ${showWa && car.phone ? `<a href="${waUrl}" target="_blank" class="btn-whatsapp">صيفط واتساب</a>` : ''}
-
+                    <div style="font-weight:bold; font-size:1.3rem;">${car.name}</div>
+                    <div style="color:#666; font-size:0.9rem; margin-bottom:10px;">${car.plate}</div>
+                    ${car.status === 'rented' ? `<div style="font-size:0.9rem;">👤 ${car.client}</div>${chrono}` : ''}
+                    <div style="font-size:0.8rem; margin-top:5px; color:gray;">${sText}</div>
+                    ${showWa && car.phone ? `<a href="https://wa.me/${car.phone}" target="_blank" class="btn-whatsapp">${t.wa}</a>` : ''}
                     <div class="actions-bar">
-                        ${car.status === 'dispo' 
-                            ? `<button style="background:var(--busy); color:white" onclick="openRent(${i})">تكرات</button>` 
-                            : `<button style="background:var(--safe); color:white" onclick="returnCar(${i})">رجعات</button>`}
+                        ${car.status === 'dispo' ? `<button style="background:var(--busy); color:white;" onclick="openRent(${i})">${t.rentBtn}</button>` : `<button style="background:var(--safe); color:white;" onclick="returnCar(${i})">${t.back}</button>`}
                     </div>
-                </div>
-            `;
+                </div>`;
         });
         localStorage.setItem('myFleet', JSON.stringify(myFleet));
     }
 
-    // إدارة العمليات
+    // إدارة الدوال
     function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; }
     function closeAll() { document.querySelectorAll('.modal, .overlay').forEach(e => e.style.display='none'); }
-    
-    function addNewCar() {
-        const n = document.getElementById('newName').value;
-        const p = document.getElementById('newPlate').value;
-        if(n && p) { myFleet.push({name:n, plate:p, status:'dispo'}); closeAll(); render(); }
-    }
-
+    function addNewCar() { const n=document.getElementById('newName').value, p=document.getElementById('newPlate').value; if(n&&p){myFleet.push({name:n, plate:p, status:'dispo'}); closeAll(); render();}}
     function openRent(i) { document.getElementById('rentIdx').value=i; openModal('rentModal'); }
-    function confirmRent() {
-        const i = document.getElementById('rentIdx').value;
-        myFleet[i].client = document.getElementById('cName').value;
-        myFleet[i].phone = document.getElementById('cPhone').value;
-        myFleet[i].end = document.getElementById('eTime').value;
-        myFleet[i].status = 'rented';
-        closeAll(); render();
-    }
+    function confirmRent() { const i=document.getElementById('rentIdx').value; myFleet[i].client=document.getElementById('cName').value; myFleet[i].phone=document.getElementById('cPhone').value; myFleet[i].end=document.getElementById('eTime').value; myFleet[i].status='rented'; closeAll(); render(); }
+    function returnCar(i) { if(confirm('OK?')){myFleet[i].status='dispo'; render();}}
 
-    function openEdit(i) {
-        const c = myFleet[i];
-        document.getElementById('editIdx').value=i;
-        document.getElementById('editName').value=c.name;
-        document.getElementById('editPlate').value=c.plate;
-        document.getElementById('editStatus').value=c.status;
-        openModal('editModal');
-    }
-
-    function saveEdit() {
-        const i = document.getElementById('editIdx').value;
-        myFleet[i].name = document.getElementById('editName').value;
-        myFleet[i].plate = document.getElementById('editPlate').value;
-        myFleet[i].status = document.getElementById('editStatus').value;
-        closeAll(); render();
-    }
-
-    function deleteCar() { if(confirm('تمسحها نهائيا؟')){ myFleet.splice(document.getElementById('editIdx').value, 1); closeAll(); render(); } }
-    function returnCar(i) { if(confirm('رجعات؟')){ myFleet[i].status='dispo'; myFleet[i].client=''; render(); } }
-
-    setInterval(render, 10000); // تحديث كل 10 ثواني باش الكرونو يبقى حي
-    render();
+    updateUI();
+    setLanguage(currentLang);
+    setInterval(render, 30000);
 </script>
 </body>
 </html>
