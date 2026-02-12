@@ -3,202 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدير الأسطول الاحترافي</title>
+    <title>مدير الأسطول - أرشيف البطاقة الوطنية</title>
     <style>
-        :root {
-            --primary: #1a73e8; --safe: #2ecc71; --busy: #3498db;
-            --warning: #f39c12; --late: #e74c3c; --maint: #95a5a6; --bg: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg); margin: 0; padding: 15px; color: #333;
-        }
-
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            background: white; padding: 15px; border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
-        }
-
-        .header h1 { font-size: 1.1rem; margin: 0; color: var(--primary); }
-
-        .lang-btn {
-            background: none; border: 1px solid #ddd; padding: 5px 10px;
-            border-radius: 8px; cursor: pointer; font-size: 0.9rem;
-        }
-
+        :root { --primary: #1a73e8; --safe: #2ecc71; --busy: #3498db; --warning: #f39c12; --late: #e74c3c; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .fleet-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 768px) { .fleet-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); } }
-
-        .car-card {
-            background: white; border-radius: 15px; padding: 20px;
-            border: 2px solid #eee; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
+        .car-card { background: white; border-radius: 15px; padding: 18px; border: 2px solid #eee; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .status-dispo { border-color: var(--safe); }
         .status-rented { border-color: var(--busy); }
-        .status-warning { border-color: var(--warning); border-width: 3px; }
-        .status-overdue { border-color: var(--late); border-width: 3px; }
-        .status-maint { border-color: var(--maint); }
-
-        .timer-container {
-            background: #fff5f5; padding: 10px; border-radius: 10px;
-            margin: 15px 0; text-align: center; border: 1px dashed var(--late);
-        }
-
-        .timer-value { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
-
-        .btn-whatsapp {
-            background: #25D366; color: white; text-decoration: none;
-            display: block; text-align: center; padding: 12px;
-            border-radius: 8px; font-weight: bold; margin-top: 10px;
-        }
-
-        .actions-bar { display: flex; gap: 10px; margin-top: 15px; }
-        .actions-bar button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-        .modal {
-            display: none; position: fixed; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); background: white;
-            padding: 25px; border-radius: 15px; z-index: 1000;
-            width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        }
-
-        .overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 999;
-        }
-
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        
-        /* زر الإعدادات الفوق على اليسار */
-        .top-settings { display: flex; gap: 10px; align-items: center; }
+        .timer-box { background: #fff5f5; padding: 10px; border-radius: 10px; margin: 12px 0; text-align: center; border: 1px dashed var(--late); }
+        .actions { display: flex; gap: 8px; margin-top: 15px; }
+        .actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; z-index: 1000; width: 90%; max-width: 500px; box-shadow: 0 0 20px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .client-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-right: 4px solid var(--primary); cursor: pointer; }
+        .history-list { font-size: 0.85rem; color: #555; margin-top: 5px; background: white; padding: 5px; border-radius: 5px; display: none; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="top-settings">
-        <button class="lang-btn" onclick="openModal('langModal')">⚙️ <span id="txt-settings">الإعدادات</span></button>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn-main" style="background:#f39c12" onclick="openModal('archiveModal')">📋 سجل الزبناء</button>
     </div>
-    <h1 id="txt-title">لوحة تحكم الأسطول 🚗</h1>
-    <button style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:8px; font-weight:bold;" onclick="openModal('carModal')" id="txt-add-btn">+ إضافة</button>
+    <h1 style="font-size: 1rem; margin: 0;">لوحة التحكم 🚗</h1>
+    <button class="btn-main" onclick="openModal('carModal')">+ إضافة</button>
 </div>
 
 <div class="fleet-grid" id="fleetGrid"></div>
 
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
 
-<div id="langModal" class="modal">
-    <h3 id="txt-lang-title">اختيار اللغة / Language</h3>
-    <button onclick="setLanguage('ar')" style="width:100%; margin-bottom:10px; padding:10px;">العربية (Morocco)</button>
-    <button onclick="setLanguage('fr')" style="width:100%; margin-bottom:10px; padding:10px;">Français</button>
-    <button onclick="setLanguage('en')" style="width:100%; margin-bottom:10px; padding:10px;">English</button>
-    <button onclick="closeAll()" style="width:100%; background:#eee; border:none; padding:10px; border-radius:8px;">إلغاء</button>
+<div id="archiveModal" class="modal">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>👥 أرشيف الزبناء (بالبطاقة الوطنية)</h3>
+        <button onclick="clearArchive()" style="color: red; border:none; background:none; font-size:0.7rem;">مسح الكل</button>
+    </div>
+    <p style="font-size:0.8rem; color:gray;">إضغط على الزبون لمشاهدة جميع فترات الكراء</p>
+    <div id="archiveList"></div>
+    <button class="btn-main" style="width:100%; margin-top: 15px; background: #666;" onclick="closeAll()">إغلاق</button>
 </div>
 
 <div id="rentModal" class="modal">
-    <h3 id="txt-rent-title">تسجيل كراء</h3>
-    <input type="hidden" id="rentIdx">
-    <input type="text" id="cName" placeholder="الإسم">
-    <input type="tel" id="cPhone" placeholder="واتساب (212...)">
+    <h3>📝 تسجيل كراء جديد</h3>
+    <input type="hidden" id="rIdx">
+    <input type="text" id="cName" placeholder="إسم المكتري الكامل">
+    <input type="text" id="cCIN" placeholder="رقم البطاقة الوطنية (CIN)">
+    <input type="tel" id="cPhone" placeholder="رقم الهاتف">
+    <label style="font-size:0.8rem;">تاريخ البداية:</label>
+    <input type="datetime-local" id="sTime">
+    <label style="font-size:0.8rem;">تاريخ الإرجاع المتوقع:</label>
     <input type="datetime-local" id="eTime">
-    <button onclick="confirmRent()" style="width:100%; background:var(--primary); color:white; padding:12px; border:none; border-radius:8px;" id="txt-confirm">تأكيد</button>
+    <button class="btn-main" style="width:100%" onclick="confirmRent()">تأكيد الكراء</button>
 </div>
 
 <div id="carModal" class="modal">
-    <h3 id="txt-new-car">إضافة سيارة جديدة</h3>
-    <input type="text" id="newName" placeholder="النوع">
+    <h3>🚗 إضافة سيارة</h3>
+    <input type="text" id="newName" placeholder="نوع السيارة">
     <input type="text" id="newPlate" placeholder="الماتريكول">
-    <button onclick="addNewCar()" style="width:100%; background:var(--primary); color:white; padding:12px; border:none; border-radius:8px;" id="txt-save">حفظ</button>
+    <button class="btn-main" style="width:100%" onclick="addCar()">حفظ</button>
 </div>
 
 <script>
-    // قاموس اللغات
-    const translations = {
-        ar: { title: "لوحة تحكم الأسطول 🚗", settings: "الإعدادات", add: "+ إضافة", rent: "تسجيل كراء", confirm: "تأكيد", save: "حفظ", newCar: "سيارة جديدة", back: "رجعات", rentBtn: "تكرات", wa: "صيفط واتساب", remaining: "باقي للدخول:", overdue: "تأخير!", status_dispo: "متوفرة ✅", status_maint: "في الصيانة 🛠️" },
-        fr: { title: "Gestion de Flotte 🚗", settings: "Paramètres", add: "+ Ajouter", rent: "Louer Voiture", confirm: "Confirmer", save: "Enregistrer", newCar: "Nouvelle Voiture", back: "Retour", rentBtn: "Louer", wa: "Envoyer WhatsApp", remaining: "Temps restant:", overdue: "Retard!", status_dispo: "Disponible ✅", status_maint: "En Maintenance 🛠️" },
-        en: { title: "Fleet Dashboard 🚗", settings: "Settings", add: "+ Add", rent: "Rent Car", confirm: "Confirm", save: "Save", newCar: "New Car", back: "Returned", rentBtn: "Rent", wa: "Send WhatsApp", remaining: "Time left:", overdue: "Overdue!", status_dispo: "Available ✅", status_maint: "Maintenance 🛠️" }
-    };
-
-    let currentLang = localStorage.getItem('appLang') || 'ar';
-    let myFleet = JSON.parse(localStorage.getItem('myFleet')) || [];
-
-    function setLanguage(lang) {
-        currentLang = lang;
-        localStorage.setItem('appLang', lang);
-        document.getElementById('mainHtml').dir = (lang === 'ar' ? 'rtl' : 'ltr');
-        document.getElementById('mainHtml').lang = lang;
-        updateUI();
-        closeAll();
-        render();
-    }
-
-    function updateUI() {
-        const t = translations[currentLang];
-        document.getElementById('txt-title').innerText = t.title;
-        document.getElementById('txt-settings').innerText = t.settings;
-        document.getElementById('txt-add-btn').innerText = t.add;
-        document.getElementById('txt-rent-title').innerText = t.rent;
-        document.getElementById('txt-confirm').innerText = t.confirm;
-        document.getElementById('txt-save').innerText = t.save;
-        document.getElementById('txt-new-car').innerText = t.newCar;
-    }
-
-    function getCountdown(endTime) {
-        const total = Date.parse(endTime) - Date.parse(new Date());
-        if (total <= 0) return translations[currentLang].overdue;
-        const d = Math.floor(total / (1000 * 60 * 60 * 24));
-        const h = Math.floor((total / (1000 * 60 * 60)) % 24);
-        const m = Math.floor((total / 1000 / 60) % 60);
-        return `${d}d ${h}h ${m}m`;
-    }
+    let fleet = JSON.parse(localStorage.getItem('myFleet')) || [];
+    let archive = JSON.parse(localStorage.getItem('myClientArchive')) || {}; // الأرشيف دابا عبارة عن Object مفتاحه هو الـ CIN
 
     function render() {
         const grid = document.getElementById('fleetGrid');
         grid.innerHTML = '';
-        const t = translations[currentLang];
-        
-        myFleet.forEach((car, i) => {
-            let sClass = 'status-dispo', sText = t.status_dispo, chrono = '', showWa = false;
-
-            if (car.status === 'maint') {
-                sClass = 'status-maint'; sText = t.status_maint;
-            } else if (car.status === 'rented') {
-                const diff = (new Date(car.end) - new Date()) / 3600000;
-                chrono = `<div class="timer-container"><small>${t.remaining}</small><br><span class="timer-value">${getCountdown(car.end)}</span></div>`;
-                if (diff < 0) { sClass = 'status-overdue'; sText = t.overdue; showWa = true; }
-                else if (diff <= 1) { sClass = 'status-warning'; showWa = true; }
-                else sClass = 'status-rented';
+        fleet.forEach((car, i) => {
+            let sCls = 'status-dispo', sTxt = 'متوفرة ✅', chrono = '';
+            if (car.status === 'rented') {
+                sCls = 'status-rented';
+                chrono = `<div class="timer-box">⏰ باقي: <b>${getChrono(car.end)}</b></div>`;
             }
-
             grid.innerHTML += `
-                <div class="car-card ${sClass}">
-                    <div style="font-weight:bold; font-size:1.3rem;">${car.name}</div>
-                    <div style="color:#666; font-size:0.9rem; margin-bottom:10px;">${car.plate}</div>
-                    ${car.status === 'rented' ? `<div style="font-size:0.9rem;">👤 ${car.client}</div>${chrono}` : ''}
-                    <div style="font-size:0.8rem; margin-top:5px; color:gray;">${sText}</div>
-                    ${showWa && car.phone ? `<a href="https://wa.me/${car.phone}" target="_blank" class="btn-whatsapp">${t.wa}</a>` : ''}
-                    <div class="actions-bar">
-                        ${car.status === 'dispo' ? `<button style="background:var(--busy); color:white;" onclick="openRent(${i})">${t.rentBtn}</button>` : `<button style="background:var(--safe); color:white;" onclick="returnCar(${i})">${t.back}</button>`}
+                <div class="car-card ${sCls}">
+                    <div style="font-weight:bold; font-size:1.2rem;">${car.name}</div>
+                    <div style="color:#666; font-size:0.8rem;">${car.plate}</div>
+                    ${car.status === 'rented' ? `<div style="margin-top:10px;">👤 ${car.client} <br> 🆔 ${car.cin}</div>${chrono}` : ''}
+                    <div class="actions">
+                        ${car.status === 'dispo' ? `<button style="background:var(--busy); color:white;" onclick="openRent(${i})">تكرات</button>` : `<button style="background:var(--safe); color:white;" onclick="retCar(${i})">رجعات</button>`}
+                        <button style="background:#eee; flex:0.3;" onclick="delCar(${i})">🗑️</button>
                     </div>
                 </div>`;
         });
-        localStorage.setItem('myFleet', JSON.stringify(myFleet));
+        localStorage.setItem('myFleet', JSON.stringify(fleet));
+        renderArchive();
     }
 
-    // إدارة الدوال
+    function renderArchive() {
+        const list = document.getElementById('archiveList');
+        list.innerHTML = '';
+        for (let cin in archive) {
+            const client = archive[cin];
+            let historyHtml = client.trips.map(trip => `• 🚗 ${trip.car} <br> &nbsp; 📅 من: ${trip.start} <br> &nbsp; 📅 إلى: ${trip.end}`).join('<hr>');
+            
+            list.innerHTML += `
+                <div class="client-item" onclick="toggleHistory('${cin}')">
+                    <strong>👤 ${client.name}</strong> (🆔 ${cin})
+                    <div id="hist-${cin}" class="history-list">${historyHtml}</div>
+                </div>`;
+        }
+    }
+
+    function toggleHistory(cin) {
+        const el = document.getElementById(`hist-${cin}`);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function retCar(i) {
+        if(confirm('تأكيد الإرجاع؟ سيتم حفظ العملية في سجل الزبون.')) {
+            const c = fleet[i];
+            const cin = c.cin.toUpperCase();
+            
+            // إذا لم يكن الزبون موجوداً، أنشئه
+            if (!archive[cin]) {
+                archive[cin] = { name: c.client, trips: [] };
+            }
+            
+            // إضافة الرحلة الحالية للسجل
+            archive[cin].trips.push({
+                car: c.name + " (" + c.plate + ")",
+                start: c.start.replace('T', ' '),
+                end: c.end.replace('T', ' ')
+            });
+
+            localStorage.setItem('myClientArchive', JSON.stringify(archive));
+            fleet[i].status = 'dispo'; render();
+        }
+    }
+
+    function confirmRent() {
+        const i = document.getElementById('rIdx').value;
+        const name = document.getElementById('cName').value;
+        const cin = document.getElementById('cCIN').value.toUpperCase();
+        const start = document.getElementById('sTime').value;
+        const end = document.getElementById('eTime').value;
+
+        if(!name || !cin || !start || !end) return alert("عمر كاع الخانات!");
+
+        fleet[i].client = name;
+        fleet[i].cin = cin;
+        fleet[i].phone = document.getElementById('cPhone').value;
+        fleet[i].start = start;
+        fleet[i].end = end;
+        fleet[i].status = 'rented';
+        closeAll(); render();
+    }
+
+    function getChrono(end) {
+        const t = Date.parse(end) - Date.parse(new Date());
+        if (t <= 0) return "انتهى الوقت!";
+        const h = Math.floor((t / 3600000) % 24), m = Math.floor((t / 60000) % 60);
+        return `${h}h ${m}m`;
+    }
+
+    function openRent(i) { document.getElementById('rIdx').value=i; openModal('rentModal'); }
     function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; }
     function closeAll() { document.querySelectorAll('.modal, .overlay').forEach(e => e.style.display='none'); }
-    function addNewCar() { const n=document.getElementById('newName').value, p=document.getElementById('newPlate').value; if(n&&p){myFleet.push({name:n, plate:p, status:'dispo'}); closeAll(); render();}}
-    function openRent(i) { document.getElementById('rentIdx').value=i; openModal('rentModal'); }
-    function confirmRent() { const i=document.getElementById('rentIdx').value; myFleet[i].client=document.getElementById('cName').value; myFleet[i].phone=document.getElementById('cPhone').value; myFleet[i].end=document.getElementById('eTime').value; myFleet[i].status='rented'; closeAll(); render(); }
-    function returnCar(i) { if(confirm('OK?')){myFleet[i].status='dispo'; render();}}
+    function addCar() { const n=document.getElementById('newName').value, p=document.getElementById('newPlate').value; if(n&&p){fleet.push({name:n, plate:p, status:'dispo'}); closeAll(); render();}}
+    function delCar(i) { if(confirm('تمسح السيارة؟')){fleet.splice(i,1); render();}}
+    function clearArchive() { if(confirm('تمسح كاع أرشيف الزبناء؟')){archive={}; localStorage.setItem('myClientArchive', JSON.stringify(archive)); render();}}
 
-    updateUI();
-    setLanguage(currentLang);
-    setInterval(render, 30000);
+    render();
 </script>
 </body>
 </html>
