@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدير الأسطول - أرشيف البطاقة الوطنية</title>
+    <title>مدير الكراء - نظام الأيام</title>
     <style>
         :root { --primary: #1a73e8; --safe: #2ecc71; --busy: #3498db; --warning: #f39c12; --late: #e74c3c; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; }
@@ -16,20 +16,18 @@
         .timer-box { background: #fff5f5; padding: 10px; border-radius: 10px; margin: 12px 0; text-align: center; border: 1px dashed var(--late); }
         .actions { display: flex; gap: 8px; margin-top: 15px; }
         .actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; z-index: 1000; width: 90%; max-width: 500px; box-shadow: 0 0 20px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; z-index: 1000; width: 90%; max-width: 450px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         .client-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-right: 4px solid var(--primary); cursor: pointer; }
-        .history-list { font-size: 0.85rem; color: #555; margin-top: 5px; background: white; padding: 5px; border-radius: 5px; display: none; }
+        .history-list { font-size: 0.85rem; color: #555; margin-top: 5px; display: none; }
         .btn-main { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div style="display: flex; gap: 10px;">
-        <button class="btn-main" style="background:#f39c12" onclick="openModal('archiveModal')">📋 سجل الزبناء</button>
-    </div>
+    <button class="btn-main" style="background:#f39c12" onclick="openModal('archiveModal')">📋 الزبناء</button>
     <h1 style="font-size: 1rem; margin: 0;">لوحة التحكم 🚗</h1>
     <button class="btn-main" onclick="openModal('carModal')">+ إضافة</button>
 </div>
@@ -39,26 +37,18 @@
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
 
 <div id="archiveModal" class="modal">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>👥 أرشيف الزبناء (بالبطاقة الوطنية)</h3>
-        <button onclick="clearArchive()" style="color: red; border:none; background:none; font-size:0.7rem;">مسح الكل</button>
-    </div>
-    <p style="font-size:0.8rem; color:gray;">إضغط على الزبون لمشاهدة جميع فترات الكراء</p>
-    <div id="archiveList"></div>
+    <h3>👥 أرشيف الزبناء (CIN)</h3>
+    <div id="archiveList" style="max-height: 60vh; overflow-y: auto;"></div>
     <button class="btn-main" style="width:100%; margin-top: 15px; background: #666;" onclick="closeAll()">إغلاق</button>
 </div>
 
 <div id="rentModal" class="modal">
     <h3>📝 تسجيل كراء جديد</h3>
     <input type="hidden" id="rIdx">
-    <input type="text" id="cName" placeholder="إسم المكتري الكامل">
+    <input type="text" id="cName" placeholder="إسم المكتري">
     <input type="text" id="cCIN" placeholder="رقم البطاقة الوطنية (CIN)">
-    <input type="tel" id="cPhone" placeholder="رقم الهاتف">
-    <label style="font-size:0.8rem;">تاريخ البداية:</label>
-    <input type="datetime-local" id="sTime">
-    <label style="font-size:0.8rem;">تاريخ الإرجاع المتوقع:</label>
-    <input type="datetime-local" id="eTime">
-    <button class="btn-main" style="width:100%" onclick="confirmRent()">تأكيد الكراء</button>
+    <input type="number" id="cDays" placeholder="عدد الأيام (مثلاً: 3)" min="1">
+    <button class="btn-main" style="width:100%; margin-top:10px;" onclick="confirmRent()">تأكيد الكراء</button>
 </div>
 
 <div id="carModal" class="modal">
@@ -70,7 +60,7 @@
 
 <script>
     let fleet = JSON.parse(localStorage.getItem('myFleet')) || [];
-    let archive = JSON.parse(localStorage.getItem('myClientArchive')) || {}; // الأرشيف دابا عبارة عن Object مفتاحه هو الـ CIN
+    let archive = JSON.parse(localStorage.getItem('myClientArchive')) || {};
 
     function render() {
         const grid = document.getElementById('fleetGrid');
@@ -85,7 +75,7 @@
                 <div class="car-card ${sCls}">
                     <div style="font-weight:bold; font-size:1.2rem;">${car.name}</div>
                     <div style="color:#666; font-size:0.8rem;">${car.plate}</div>
-                    ${car.status === 'rented' ? `<div style="margin-top:10px;">👤 ${car.client} <br> 🆔 ${car.cin}</div>${chrono}` : ''}
+                    ${car.status === 'rented' ? `<div style="margin-top:10px;">👤 ${car.client} | 🆔 ${car.cin}</div>${chrono}` : ''}
                     <div class="actions">
                         ${car.status === 'dispo' ? `<button style="background:var(--busy); color:white;" onclick="openRent(${i})">تكرات</button>` : `<button style="background:var(--safe); color:white;" onclick="retCar(${i})">رجعات</button>`}
                         <button style="background:#eee; flex:0.3;" onclick="delCar(${i})">🗑️</button>
@@ -101,8 +91,7 @@
         list.innerHTML = '';
         for (let cin in archive) {
             const client = archive[cin];
-            let historyHtml = client.trips.map(trip => `• 🚗 ${trip.car} <br> &nbsp; 📅 من: ${trip.start} <br> &nbsp; 📅 إلى: ${trip.end}`).join('<hr>');
-            
+            let historyHtml = client.trips.map(trip => `• 🚗 ${trip.car} <br> &nbsp; 📅 الموعد: ${trip.start} -> ${trip.end}`).join('<hr style="opacity:0.2">');
             list.innerHTML += `
                 <div class="client-item" onclick="toggleHistory('${cin}')">
                     <strong>👤 ${client.name}</strong> (🆔 ${cin})
@@ -116,21 +105,37 @@
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
     }
 
+    function confirmRent() {
+        const i = document.getElementById('rIdx').value;
+        const name = document.getElementById('cName').value;
+        const cin = document.getElementById('cCIN').value.toUpperCase();
+        const days = parseInt(document.getElementById('cDays').value);
+
+        if(!name || !cin || !days) return alert("عمر المعلومات كاملة!");
+
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + days); // الحساب بالأيام
+
+        fleet[i].client = name;
+        fleet[i].cin = cin;
+        fleet[i].start = startDate.toLocaleString();
+        fleet[i].end = endDate.toISOString(); // حفظ بصيغة ISO للحساب
+        fleet[i].status = 'rented';
+        
+        closeAll(); render();
+    }
+
     function retCar(i) {
-        if(confirm('تأكيد الإرجاع؟ سيتم حفظ العملية في سجل الزبون.')) {
+        if(confirm('تأكيد الإرجاع؟')) {
             const c = fleet[i];
             const cin = c.cin.toUpperCase();
+            if (!archive[cin]) archive[cin] = { name: c.client, trips: [] };
             
-            // إذا لم يكن الزبون موجوداً، أنشئه
-            if (!archive[cin]) {
-                archive[cin] = { name: c.client, trips: [] };
-            }
-            
-            // إضافة الرحلة الحالية للسجل
             archive[cin].trips.push({
-                car: c.name + " (" + c.plate + ")",
-                start: c.start.replace('T', ' '),
-                end: c.end.replace('T', ' ')
+                car: c.name,
+                start: c.start,
+                end: new Date().toLocaleString()
             });
 
             localStorage.setItem('myClientArchive', JSON.stringify(archive));
@@ -138,39 +143,29 @@
         }
     }
 
-    function confirmRent() {
-        const i = document.getElementById('rIdx').value;
-        const name = document.getElementById('cName').value;
-        const cin = document.getElementById('cCIN').value.toUpperCase();
-        const start = document.getElementById('sTime').value;
-        const end = document.getElementById('eTime').value;
-
-        if(!name || !cin || !start || !end) return alert("عمر كاع الخانات!");
-
-        fleet[i].client = name;
-        fleet[i].cin = cin;
-        fleet[i].phone = document.getElementById('cPhone').value;
-        fleet[i].start = start;
-        fleet[i].end = end;
-        fleet[i].status = 'rented';
-        closeAll(); render();
-    }
-
-    function getChrono(end) {
-        const t = Date.parse(end) - Date.parse(new Date());
+    function getChrono(endISO) {
+        const t = Date.parse(endISO) - Date.parse(new Date());
         if (t <= 0) return "انتهى الوقت!";
-        const h = Math.floor((t / 3600000) % 24), m = Math.floor((t / 60000) % 60);
-        return `${h}h ${m}m`;
+        const d = Math.floor(t / (1000 * 60 * 60 * 24));
+        const h = Math.floor((t / 3600000) % 24);
+        const m = Math.floor((t / 60000) % 60);
+        return d > 0 ? `${d} يوم و ${h} ساعة` : `${h} ساعة و ${m} دقيقة`;
     }
 
-    function openRent(i) { document.getElementById('rIdx').value=i; openModal('rentModal'); }
+    function openRent(i) { 
+        document.getElementById('rIdx').value=i; 
+        document.getElementById('cName').value='';
+        document.getElementById('cCIN').value='';
+        document.getElementById('cDays').value='';
+        openModal('rentModal'); 
+    }
     function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; }
     function closeAll() { document.querySelectorAll('.modal, .overlay').forEach(e => e.style.display='none'); }
     function addCar() { const n=document.getElementById('newName').value, p=document.getElementById('newPlate').value; if(n&&p){fleet.push({name:n, plate:p, status:'dispo'}); closeAll(); render();}}
     function delCar(i) { if(confirm('تمسح السيارة؟')){fleet.splice(i,1); render();}}
-    function clearArchive() { if(confirm('تمسح كاع أرشيف الزبناء؟')){archive={}; localStorage.setItem('myClientArchive', JSON.stringify(archive)); render();}}
 
     render();
+    setInterval(render, 60000); // تحديث الكرونو كل دقيقة
 </script>
 </body>
 </html>
