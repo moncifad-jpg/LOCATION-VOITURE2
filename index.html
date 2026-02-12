@@ -3,32 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدير الكراء - نظام الأيام</title>
+    <title>مدير الكراء - النسخة الكاملة</title>
     <style>
-        :root { --primary: #1a73e8; --safe: #2ecc71; --busy: #3498db; --warning: #f39c12; --late: #e74c3c; --bg: #f8f9fa; }
+        :root { --primary: #1a73e8; --safe: #2ecc71; --busy: #3498db; --warning: #f39c12; --late: #e74c3c; --maint: #95a5a6; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; }
         .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .fleet-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 768px) { .fleet-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); } }
         .car-card { background: white; border-radius: 15px; padding: 18px; border: 2px solid #eee; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        /* ألوان الحالات */
         .status-dispo { border-color: var(--safe); }
         .status-rented { border-color: var(--busy); }
+        .status-maint { border-color: var(--maint); background-color: #f2f2f2; opacity: 0.8; }
+        
         .timer-box { background: #fff5f5; padding: 10px; border-radius: 10px; margin: 12px 0; text-align: center; border: 1px dashed var(--late); }
         .actions { display: flex; gap: 8px; margin-top: 15px; }
         .actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; z-index: 1000; width: 90%; max-width: 450px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         .client-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-right: 4px solid var(--primary); cursor: pointer; }
         .history-list { font-size: 0.85rem; color: #555; margin-top: 5px; display: none; }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <button class="btn-main" style="background:#f39c12" onclick="openModal('archiveModal')">📋 الزبناء</button>
-    <h1 style="font-size: 1rem; margin: 0;">لوحة التحكم 🚗</h1>
+    <h1 style="font-size: 0.9rem; margin: 0;">مدير الأسطول 🚗</h1>
     <button class="btn-main" onclick="openModal('carModal')">+ إضافة</button>
 </div>
 
@@ -47,12 +51,22 @@
     <input type="hidden" id="rIdx">
     <input type="text" id="cName" placeholder="إسم المكتري">
     <input type="text" id="cCIN" placeholder="رقم البطاقة الوطنية (CIN)">
-    <input type="number" id="cDays" placeholder="عدد الأيام (مثلاً: 3)" min="1">
-    <button class="btn-main" style="width:100%; margin-top:10px;" onclick="confirmRent()">تأكيد الكراء</button>
+    <input type="number" id="cDays" placeholder="عدد الأيام">
+    <button class="btn-main" style="width:100%; margin-top:10px;" onclick="confirmRent()">تأكيد</button>
+</div>
+
+<div id="statusModal" class="modal">
+    <h3>⚙️ تغيير حالة السيارة</h3>
+    <input type="hidden" id="sIdx">
+    <select id="newStatusSelect">
+        <option value="dispo">متوفرة (واجدة) ✅</option>
+        <option value="maint">عند الميكانيك / لافاج 🛠️</option>
+    </select>
+    <button class="btn-main" style="width:100%; margin-top:10px;" onclick="saveStatus()">حفظ الحالة</button>
 </div>
 
 <div id="carModal" class="modal">
-    <h3>🚗 إضافة سيارة</h3>
+    <h3>🚗 إضافة سيارة جديدة</h3>
     <input type="text" id="newName" placeholder="نوع السيارة">
     <input type="text" id="newPlate" placeholder="الماتريكول">
     <button class="btn-main" style="width:100%" onclick="addCar()">حفظ</button>
@@ -67,18 +81,32 @@
         grid.innerHTML = '';
         fleet.forEach((car, i) => {
             let sCls = 'status-dispo', sTxt = 'متوفرة ✅', chrono = '';
+            
             if (car.status === 'rented') {
                 sCls = 'status-rented';
+                sTxt = 'كارية 🟦';
                 chrono = `<div class="timer-box">⏰ باقي: <b>${getChrono(car.end)}</b></div>`;
+            } else if (car.status === 'maint') {
+                sCls = 'status-maint';
+                sTxt = 'ميكانيك/لافاج 🛠️';
             }
+
             grid.innerHTML += `
                 <div class="car-card ${sCls}">
-                    <div style="font-weight:bold; font-size:1.2rem;">${car.name}</div>
+                    <div style="display:flex; justify-content:space-between">
+                        <span style="font-weight:bold; font-size:1.1rem;">${car.name}</span>
+                        <button onclick="openStatus(${i})" style="background:none; border:none; cursor:pointer;">⚙️</button>
+                    </div>
                     <div style="color:#666; font-size:0.8rem;">${car.plate}</div>
-                    ${car.status === 'rented' ? `<div style="margin-top:10px;">👤 ${car.client} | 🆔 ${car.cin}</div>${chrono}` : ''}
+                    <div style="font-size:0.8rem; margin-top:5px; color:var(--primary)">${sTxt}</div>
+                    
+                    ${car.status === 'rented' ? `<div style="margin-top:10px; font-size:0.9rem;">👤 ${car.client} <br> 🆔 ${car.cin}</div>${chrono}` : ''}
+                    
                     <div class="actions">
-                        ${car.status === 'dispo' ? `<button style="background:var(--busy); color:white;" onclick="openRent(${i})">تكرات</button>` : `<button style="background:var(--safe); color:white;" onclick="retCar(${i})">رجعات</button>`}
-                        <button style="background:#eee; flex:0.3;" onclick="delCar(${i})">🗑️</button>
+                        ${car.status === 'dispo' ? `<button style="background:var(--busy); color:white;" onclick="openRent(${i})">تكرات</button>` : ''}
+                        ${car.status === 'rented' ? `<button style="background:var(--safe); color:white;" onclick="retCar(${i})">رجعات</button>` : ''}
+                        ${car.status === 'maint' ? `<button style="background:var(--safe); color:white;" onclick="makeDispo(${i})">واجدة</button>` : ''}
+                        <button style="background:#eee; flex:0.2;" onclick="delCar(${i})">🗑️</button>
                     </div>
                 </div>`;
         });
@@ -91,12 +119,8 @@
         list.innerHTML = '';
         for (let cin in archive) {
             const client = archive[cin];
-            let historyHtml = client.trips.map(trip => `• 🚗 ${trip.car} <br> &nbsp; 📅 الموعد: ${trip.start} -> ${trip.end}`).join('<hr style="opacity:0.2">');
-            list.innerHTML += `
-                <div class="client-item" onclick="toggleHistory('${cin}')">
-                    <strong>👤 ${client.name}</strong> (🆔 ${cin})
-                    <div id="hist-${cin}" class="history-list">${historyHtml}</div>
-                </div>`;
+            let historyHtml = client.trips.map(trip => `• 🚗 ${trip.car} <br> 📅 ${trip.start} -> ${trip.end}`).join('<hr style="opacity:0.2">');
+            list.innerHTML += `<div class="client-item" onclick="toggleHistory('${cin}')"><strong>👤 ${client.name}</strong> (🆔 ${cin})<div id="hist-${cin}" class="history-list">${historyHtml}</div></div>`;
         }
     }
 
@@ -105,39 +129,35 @@
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
     }
 
+    function openRent(i) { document.getElementById('rIdx').value=i; openModal('rentModal'); }
+    function openStatus(i) { document.getElementById('sIdx').value=i; openModal('statusModal'); }
+
+    function saveStatus() {
+        const i = document.getElementById('sIdx').value;
+        fleet[i].status = document.getElementById('newStatusSelect').value;
+        closeAll(); render();
+    }
+
+    function makeDispo(i) { fleet[i].status = 'dispo'; render(); }
+
     function confirmRent() {
         const i = document.getElementById('rIdx').value;
         const name = document.getElementById('cName').value;
         const cin = document.getElementById('cCIN').value.toUpperCase();
         const days = parseInt(document.getElementById('cDays').value);
-
-        if(!name || !cin || !days) return alert("عمر المعلومات كاملة!");
-
-        const startDate = new Date();
+        if(!name || !cin || !days) return alert("عمر الخانات!");
         const endDate = new Date();
-        endDate.setDate(startDate.getDate() + days); // الحساب بالأيام
-
-        fleet[i].client = name;
-        fleet[i].cin = cin;
-        fleet[i].start = startDate.toLocaleString();
-        fleet[i].end = endDate.toISOString(); // حفظ بصيغة ISO للحساب
-        fleet[i].status = 'rented';
-        
+        endDate.setDate(endDate.getDate() + days);
+        fleet[i].client = name; fleet[i].cin = cin; fleet[i].start = new Date().toLocaleString();
+        fleet[i].end = endDate.toISOString(); fleet[i].status = 'rented';
         closeAll(); render();
     }
 
     function retCar(i) {
         if(confirm('تأكيد الإرجاع؟')) {
-            const c = fleet[i];
-            const cin = c.cin.toUpperCase();
+            const c = fleet[i]; const cin = c.cin.toUpperCase();
             if (!archive[cin]) archive[cin] = { name: c.client, trips: [] };
-            
-            archive[cin].trips.push({
-                car: c.name,
-                start: c.start,
-                end: new Date().toLocaleString()
-            });
-
+            archive[cin].trips.push({ car: c.name, start: c.start, end: new Date().toLocaleString() });
             localStorage.setItem('myClientArchive', JSON.stringify(archive));
             fleet[i].status = 'dispo'; render();
         }
@@ -146,26 +166,17 @@
     function getChrono(endISO) {
         const t = Date.parse(endISO) - Date.parse(new Date());
         if (t <= 0) return "انتهى الوقت!";
-        const d = Math.floor(t / (1000 * 60 * 60 * 24));
-        const h = Math.floor((t / 3600000) % 24);
-        const m = Math.floor((t / 60000) % 60);
+        const d = Math.floor(t / 86400000), h = Math.floor((t / 3600000) % 24), m = Math.floor((t / 60000) % 60);
         return d > 0 ? `${d} يوم و ${h} ساعة` : `${h} ساعة و ${m} دقيقة`;
     }
 
-    function openRent(i) { 
-        document.getElementById('rIdx').value=i; 
-        document.getElementById('cName').value='';
-        document.getElementById('cCIN').value='';
-        document.getElementById('cDays').value='';
-        openModal('rentModal'); 
-    }
     function openModal(id) { document.getElementById(id).style.display='block'; document.getElementById('overlay').style.display='block'; }
     function closeAll() { document.querySelectorAll('.modal, .overlay').forEach(e => e.style.display='none'); }
     function addCar() { const n=document.getElementById('newName').value, p=document.getElementById('newPlate').value; if(n&&p){fleet.push({name:n, plate:p, status:'dispo'}); closeAll(); render();}}
     function delCar(i) { if(confirm('تمسح السيارة؟')){fleet.splice(i,1); render();}}
 
     render();
-    setInterval(render, 60000); // تحديث الكرونو كل دقيقة
+    setInterval(render, 60000);
 </script>
 </body>
 </html>
